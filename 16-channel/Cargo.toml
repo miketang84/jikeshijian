@@ -1,0 +1,33 @@
+[package]
+name = "channel"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.33.0", features = ["full"] }
+
+[[bin]]
+name = "main_a"
+path = "src/main_a.rs"
+
+[[bin]]
+name = "main_b"
+path = "src/main_b.rs"
+
+[[bin]]
+name = "main_c"
+path = "src/main_c.rs"
+
+[[bin]]
+name = "main_d"
+path = "src/main_d.rs"
+
+[[bin]]
+name = "main_e"
+path = "src/main_e.rs"
+
+[[bin]]
+name = "main_f"
+path = "src/main_f.rs"
