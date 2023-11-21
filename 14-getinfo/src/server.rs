@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     // 判断是否转换失败，如果失败，就有可能是网络上的数据还没读完
                     // 要继续loop读下一波数据
-                    offset = n;
+                    offset = end;
                 }
             }
         });
