@@ -1,0 +1,45 @@
+import { Button, VerticalBox, TextEdit } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    title: "OpenChat Bot";
+    width: 500px;
+    height: 550px;
+    forward-focus: ed2;
+    // in-out property<int> counter: 42;
+    in-out property<string> dialog;
+    in-out property<string> input-ask;
+    
+    // callback request-increase-value();
+    callback send-ask-content(string);
+
+    VerticalBox {
+        Text {
+            // text: "Model: openchat_3.5.Q8_0.gguf";
+            text: "Model: openchat_3.5.Q4_K_M.gguf";
+        }
+        ed1 := TextEdit {
+            font-size: 15px;
+            width: parent.width - 20px;
+            // height: parent.height - 200px;
+            vertical-stretch: 1;
+            read-only: true;
+            text: root.dialog;
+        }        
+        ed2 := TextEdit {
+            font-size: 15px;
+            width: parent.width - 20px;
+            height: 100px;
+            text <=> root.input-ask;
+        }
+        Button {
+            text: "Send";
+            clicked => {
+                // root.request-increase-value();
+                root.send-ask-content(root.input-ask);
+                ed2.text = "";
+                // root.update-dialog-content("test ");
+                // root.dialog = root.dialog + "test ";
+            }
+        }
+    }
+}
