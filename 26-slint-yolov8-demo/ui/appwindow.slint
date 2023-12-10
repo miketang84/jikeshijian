@@ -1,0 +1,63 @@
+import { Button, VerticalBox , HorizontalBox} from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    width: 900px;
+    height: 480px;
+
+    in-out property <image> orig-image;
+    in-out property <string> orig-image-path;
+    
+    in-out property <image> generated-image;
+    
+    callback select-orig-pic();
+    callback probe-objects();
+    callback probe-poses();
+    
+    VerticalBox {
+        width: 100%;
+        vertical-stretch: 1;
+        Text {
+            text: "Model Size: Medium";
+        }
+        HorizontalBox {
+            width: 98%;
+            vertical-stretch: 1;
+            Image {
+                width: 49%;
+                source: root.orig-image;
+                
+            }
+            Rectangle {
+                width: 1px;
+                background: gray;
+            }
+            Image {
+                width: 49%;
+                source: root.generated-image;
+            }
+        }
+        HorizontalBox {
+            alignment: start;
+            height: 50px;
+            Button {
+                text: "Select Picture..";
+                clicked => {
+                    root.select-orig-pic();
+                }
+            }
+            Button {
+                text: "Detect Objects";
+                clicked => {
+                    root.probe-objects();
+                }
+            }
+            Button {
+                text: "Detect Poses";
+                clicked => {
+                    root.probe-poses();
+                }
+            }
+        }
+        
+    }
+}
