@@ -5,11 +5,10 @@ use axum::{
     Router,
 };
 use serde::Deserialize;
-use std::net::SocketAddr;
 use tower_http::trace::TraceLayer;
 
-#[derive(Debug, Deserialize)]
 #[allow(dead_code)]
+#[derive(Debug, Deserialize)]
 struct Params {
     foo: Option<i32>,
     bar: Option<String>,
@@ -19,19 +18,19 @@ struct Params {
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     let app = Router::new()
         .route("/", get(handler))
         .route("/query", get(query))
         .route("/form", get(show_form).post(accept_form))
-        .route("/json", post(accept_json));
+        .route("/json", post(accept_json))
+        .layer(TraceLayer::new_for_http());
 
-    tracing::debug!("listening on {}", addr);
-
-    axum::Server::bind(&addr)
-        .serve(app.layer(TraceLayer::new_for_http()).into_make_service())
+    // run it
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
+    tracing::debug!("listening on {}", listener.local_addr().unwrap());
+    axum::serve(listener, app).await.unwrap();
 }
 
 async fn handler() -> Html<&'static str> {
@@ -69,8 +68,8 @@ async fn show_form() -> Html<&'static str> {
     )
 }
 
-#[derive(Deserialize, Debug)]
 #[allow(dead_code)]
+#[derive(Deserialize, Debug)]
 struct Input {
     name: String,
     email: String,

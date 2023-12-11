@@ -1,16 +1,15 @@
 use axum::{
     extract::{Form, Json, Query},
-    response::Html,
+    response::{Html, IntoResponse},
     routing::{get, post},
     Router,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 use serde_json::json;
-use std::net::SocketAddr;
 use tower_http::trace::TraceLayer;
 
-#[derive(Debug, Deserialize)]
 #[allow(dead_code)]
+#[derive(Debug, Deserialize)]
 struct Params {
     foo: Option<i32>,
     bar: Option<String>,
@@ -20,19 +19,21 @@ struct Params {
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     let app = Router::new()
         .route("/", get(handler))
         .route("/query", get(query))
         .route("/form", get(show_form).post(accept_form))
-        .route("/json", post(accept_json));
+        .route("/json", post(accept_json))
+        .route("/resjson", post(res_json))
+        .route("/resjson2", post(res_json2))
+        .layer(TraceLayer::new_for_http());
 
-    tracing::debug!("listening on {}", addr);
-
-    axum::Server::bind(&addr)
-        .serve(app.layer(TraceLayer::new_for_http()).into_make_service())
+    // run it
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
+    tracing::debug!("listening on {}", listener.local_addr().unwrap());
+    axum::serve(listener, app).await.unwrap();
 }
 
 async fn handler() -> Html<&'static str> {
@@ -70,19 +71,12 @@ async fn show_form() -> Html<&'static str> {
     )
 }
 
-#[derive(Deserialize, Debug)]
 #[allow(dead_code)]
+#[derive(Deserialize, Debug)]
 struct Input {
     name: String,
     email: String,
 }
-
-// #[derive(Debug, Serialize)]
-// #[allow(dead_code)]
-// struct Output {
-//     name: String,
-//     age: u32,
-// }
 
 async fn accept_form(Form(input): Form<Input>) -> Html<&'static str> {
     tracing::debug!("form params {:?}", input);
@@ -90,26 +84,32 @@ async fn accept_form(Form(input): Form<Input>) -> Html<&'static str> {
     Html("<h3>Form posted</h3>")
 }
 
-// async fn accept_json(Json(input): Json<Input>) -> String {
-//     tracing::debug!("json params {:?}", input);
-//     // Json("{\"a\": \"1\"}")
-//     json!({
-//         "result": "ok",
-//         "number": 1,
-//     })
-//     .to_string()
-// }
+async fn accept_json(Json(input): Json<Input>) -> Html<&'static str> {
+    tracing::debug!("json params {:?}", input);
+    Html("<h3>Json posted</h3>")
+}
 
-async fn accept_json(Json(input): Json<Input>) -> Json<serde_json::Value> {
+async fn res_json(Json(input): Json<Input>) -> impl IntoResponse {
     tracing::debug!("json params {:?}", input);
     Json(json!({
         "result": "ok",
         "number": 1,
     }))
+}
 
-    // let a = Output {
-    //     name: "mike".to_string(),
-    //     age: 20,
-    // };
-    // Json(serde_json::to_value(a).unwrap())
+#[allow(dead_code)]
+#[derive(Serialize, Debug)]
+struct Output {
+    name: String,
+    age: u32,
+}
+
+async fn res_json2(Json(input): Json<Input>) -> impl IntoResponse {
+    tracing::debug!("json params {:?}", input);
+   
+    let a = Output {
+        name: "mike".to_string(),
+        age: 20,
+    };
+    Json(serde_json::to_value(a).unwrap())
 }
