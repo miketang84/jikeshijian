@@ -9,20 +9,11 @@ use axum::{
 use bb8::Pool;
 use bb8_postgres::PostgresConnectionManager;
 use serde::{Deserialize, Serialize};
-// use serde_json::json;
-use std::net::SocketAddr;
 use tokio_postgres::NoTls;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
 type ConnectionPool = Pool<PostgresConnectionManager<NoTls>>;
-
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct Params {
-    foo: Option<i32>,
-    bar: Option<String>,
-}
 
 #[tokio::main]
 async fn main() {
@@ -36,37 +27,24 @@ async fn main() {
 
     let pool = Pool::builder().build(manager).await.unwrap();
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     let app = Router::new()
-        // .route("/query", get(query))
-        // .route("/query_from_db", get(query_from_db))
-        // .route("/json", post(accept_json))
         .route("/todos", get(todos_index))
         .route("/todo/new", post(todo_create))
         .route("/todo/update", post(todo_update))
         .route("/todo/delete/:id", post(todo_delete))
+        .layer(TraceLayer::new_for_http())
+        .fallback(handler_404)
         .with_state(pool);
 
-    let app = app.fallback(handler_404);
-
-    tracing::debug!("listening on {}", addr);
-
-    axum::Server::bind(&addr)
-        .serve(app.layer(TraceLayer::new_for_http()).into_make_service())
+    // run it
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
+    tracing::debug!("listening on {}", listener.local_addr().unwrap());
+    axum::serve(listener, app).await.unwrap();
 }
 
-async fn handler_404() -> impl IntoResponse {
-    (StatusCode::NOT_FOUND, "nothing to see here")
-}
 
-fn internal_error<E>(err: E) -> (StatusCode, String)
-where
-    E: std::error::Error,
-{
-    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
-}
 
 #[derive(Debug, Serialize, Clone)]
 struct Todo {
@@ -183,4 +161,16 @@ async fn todo_delete(
         .map_err(internal_error)?;
 
     Ok((StatusCode::OK, Json(id)))
+}
+
+
+async fn handler_404() -> impl IntoResponse {
+    (StatusCode::NOT_FOUND, "nothing to see here")
+}
+
+fn internal_error<E>(err: E) -> (StatusCode, String)
+where
+    E: std::error::Error,
+{
+    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
 }
