@@ -71,7 +71,7 @@ fn main() -> anyhow::Result<()> {
     for (_, tensor) in model.tensor_infos.iter() {
         let elem_count = tensor.shape.elem_count();
         total_size_in_bytes +=
-            elem_count * tensor.ggml_dtype.type_size() / tensor.ggml_dtype.blck_size();
+            elem_count * tensor.ggml_dtype.type_size() / tensor.ggml_dtype.block_size();
     }
     println!(
         "loaded {:?} tensors ({}bytes) in {:.2}s",
@@ -79,7 +79,7 @@ fn main() -> anyhow::Result<()> {
         total_size_in_bytes,
         start.elapsed().as_secs_f32(),
     );
-    let mut model = quantized_model::ModelWeights::from_gguf(model, &mut file)?;
+    let mut model = quantized_model::ModelWeights::from_gguf(model, &mut file, &Device::Cpu)?;
     println!("model built");
 
     // load tokenizer
